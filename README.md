@@ -8,24 +8,32 @@ An unofficial, open-source reimplementation of Adobe's `ZXPSignCmd` tool, writte
 
 ## Features
 
-- **Self-signed certificate generation** — Create PKCS#12 (`.p12`) certificates for extension signing
-- **ZXP signing** — Package and sign CEP extensions using XMLDSig, fully compatible with Adobe's verification
-- **ZXP verification** — Check signature structure of `.zxp` files
-- **Pure Go** — No CGO, no OpenSSL dependency, cross-compiles to any platform
-- **Verified compatible** — Output passes `ZXPSignCmd -verify` from Adobe's official tool (v4.1.3)
+- **Self-signed certificate generation** -- Create PKCS#12 (`.p12`) certificates for extension signing
+- **ZXP signing** -- Package and sign CEP extensions using XMLDSig, fully compatible with Adobe's verification
+- **ZXP verification** -- Check signature structure of `.zxp` files
+- **Pure Go** -- No CGO, no OpenSSL dependency, cross-compiles to any platform
+- **Verified compatible** -- Output passes `ZXPSignCmd -verify` from Adobe's official tool (v4.1.3)
 
 ## Installation
+
+### Go install
 
 ```bash
 go install github.com/fzlee/adobe-zxpsigncmd-linux@latest
 ```
 
-Or build from source:
+### Build from source
 
 ```bash
 git clone https://github.com/fzlee/adobe-zxpsigncmd-linux.git
 cd adobe-zxpsigncmd-linux
 go build -o adobe-sign .
+```
+
+### Docker
+
+```bash
+docker pull fzlee/zxpsigncmd-linux
 ```
 
 ## Usage
@@ -35,31 +43,60 @@ The CLI mirrors Adobe's `ZXPSignCmd` interface:
 ### Create a self-signed certificate
 
 ```bash
-./adobe-sign -selfSignedCert <country> <state> <org> <commonName> <password> <output.p12> [-validityDays N]
+adobe-sign -selfSignedCert <country> <state> <org> <commonName> <password> <output.p12> [-validityDays N]
 ```
 
 Example:
 
 ```bash
-./adobe-sign -selfSignedCert CN Beijing MyCompany "My Plugin" mypassword cert.p12 -validityDays 3650
+adobe-sign -selfSignedCert CN Beijing MyCompany "My Plugin" mypassword cert.p12 -validityDays 3650
 ```
 
 ### Sign a CEP extension
 
 ```bash
-./adobe-sign -sign <inputDir> <output.zxp> <cert.p12> <password>
+adobe-sign -sign <inputDir> <output.zxp> <cert.p12> <password>
 ```
 
 Example:
 
 ```bash
-./adobe-sign -sign ./my-extension output.zxp cert.p12 mypassword
+adobe-sign -sign ./my-extension output.zxp cert.p12 mypassword
 ```
 
 ### Verify a ZXP package
 
 ```bash
-./adobe-sign -verify <input.zxp>
+adobe-sign -verify <input.zxp>
+```
+
+### Docker usage
+
+Mount your local directories into the container to sign extensions:
+
+**Create a certificate:**
+
+```bash
+docker run --rm -v $(pwd)/certs:/certs fzlee/zxpsigncmd-linux \
+  -selfSignedCert CN Beijing MyCompany "My Plugin" mypassword /certs/cert.p12 -validityDays 3650
+```
+
+**Sign an extension:**
+
+```bash
+docker run --rm \
+  -v $(pwd)/my-extension:/ext \
+  -v $(pwd)/certs:/certs \
+  -v $(pwd)/output:/output \
+  fzlee/zxpsigncmd-linux \
+  -sign /ext /output/plugin.zxp /certs/cert.p12 mypassword
+```
+
+**Verify a ZXP:**
+
+```bash
+docker run --rm -v $(pwd)/output:/output fzlee/zxpsigncmd-linux \
+  -verify /output/plugin.zxp
 ```
 
 ## How it works
